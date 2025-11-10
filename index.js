@@ -24,8 +24,7 @@ const run = async () => {
         const KrishiLink = client.db("KrishiLink");
         const cropsCollection = KrishiLink.collection("crops");
         app.post('/crops', async (req, res) => {
-            const newCrop = req.body
-            // console.log(newCrop)
+            const newCrop = req.body;
             const result = await cropsCollection.insertOne(newCrop)
             res.send(result)
         })
@@ -34,7 +33,8 @@ const run = async () => {
             res.send(result)
         })
         app.get('/crops', async (req, res) => {
-            const result = await cropsCollection.find().toArray()
+            const search = req.query.search || '';
+            const result = await cropsCollection.find({name: {$regex: search, $options: 'i'}}).toArray()
             res.send(result)
         })
         app.get('/crops/:id', async (req, res) => {
