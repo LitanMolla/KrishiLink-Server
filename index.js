@@ -45,8 +45,13 @@ const run = async () => {
         app.post('/interests/:id', async (req, res) => {
             const query = req.params.id;
             const newInterest = req.body;
-            console.log({ query, newInterest })
+            newInterest._id= new ObjectId()
             const result = await cropsCollection.updateOne({ _id: new ObjectId(query) }, { $push: { interests: newInterest } })
+            res.send(result)
+        })
+        app.post('/add', async (req, res) => {
+            const newCrop = req.body;
+            result = await cropsCollection.insertOne(newCrop)
             res.send(result)
         })
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
