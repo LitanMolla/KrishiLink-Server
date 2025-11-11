@@ -34,7 +34,7 @@ const run = async () => {
         })
         app.get('/crops', async (req, res) => {
             const search = req.query.search || '';
-            const result = await cropsCollection.find({name: {$regex: search, $options: 'i'}}).toArray()
+            const result = await cropsCollection.find({ name: { $regex: search, $options: 'i' } }).toArray()
             res.send(result)
         })
         app.get('/crops/:id', async (req, res) => {
@@ -45,13 +45,18 @@ const run = async () => {
         app.post('/interests/:id', async (req, res) => {
             const query = req.params.id;
             const newInterest = req.body;
-            newInterest._id= new ObjectId()
+            newInterest._id = new ObjectId()
             const result = await cropsCollection.updateOne({ _id: new ObjectId(query) }, { $push: { interests: newInterest } })
             res.send(result)
         })
         app.post('/add', async (req, res) => {
             const newCrop = req.body;
             result = await cropsCollection.insertOne(newCrop)
+            res.send(result)
+        })
+        app.get('/interests/:email', async (req, res) => {
+            const email = req.params.email;
+            const result = await cropsCollection.find({ interests: { $elemMatch: { userEmail: email } } }).toArray();
             res.send(result)
         })
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
