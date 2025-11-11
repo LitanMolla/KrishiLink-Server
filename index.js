@@ -37,6 +37,15 @@ const run = async () => {
             const result = await cropsCollection.find({ name: { $regex: search, $options: 'i' } }).toArray()
             res.send(result)
         })
+        app.get('/my-crops', async (req, res) => {
+            const email = req.query.email;
+            const query = { ['owner.ownerEmail']: email }
+            if (!email) {
+                return res.send({ message: 'Email missing' })
+            }
+            const result = await cropsCollection.find(query).toArray()
+            res.send(result)
+        })
         app.get('/crops/:id', async (req, res) => {
             const id = req.params.id;
             const result = await cropsCollection.find({ _id: new ObjectId(id) }).toArray()
@@ -56,7 +65,21 @@ const run = async () => {
         })
         app.get('/interests/:email', async (req, res) => {
             const email = req.params.email;
-            const result = await cropsCollection.find({ interests: { $elemMatch: { userEmail: email } } }).toArray();
+            const result = await cropsCollection.aggregate([{ $unwind: "$interests" }, { $match: { "interests.userEmail": email } }, { $addFields: { quantity: { $toInt: "$interests.quantity" } } }, { $project: { _id: 0, cropId: "$_id", cropName: "$name", ownerName: "$owner.ownerName", quantity: 1, message: "$interests.message", status: "$interests.status" } }, { $sort: { quantity: -1 } }]).toArray();
+            res.send(result);
+        })
+        app.patch('/my-crops/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) };
+            const updatedData = req.body;
+            const update = { $set: updatedData }
+            const result = await cropsCollection.updateOne(query, update)
+            res.send(result)
+        })
+        app.delete('/my-crops/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await cropsCollection.deleteOne(query)
             res.send(result)
         })
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
