@@ -23,6 +23,8 @@ const run = async () => {
         await client.db("admin").command({ ping: 1 });
         const KrishiLink = client.db("KrishiLink");
         const cropsCollection = KrishiLink.collection("crops");
+        const stepsCollection = KrishiLink.collection("steps");
+        const newsCollection = KrishiLink.collection("news");
         app.post('/crops', async (req, res) => {
             const newCrop = req.body;
             const result = await cropsCollection.insertOne(newCrop)
@@ -65,7 +67,7 @@ const run = async () => {
         })
         app.get('/interests/:email', async (req, res) => {
             const email = req.params.email;
-            const result = await cropsCollection.aggregate([{ $unwind: "$interests" }, { $match: { "interests.userEmail": email } }, { $addFields: { quantity: { $toInt: "$interests.quantity" } } }, { $project: { _id: 0, cropId: "$_id", cropName: "$name", ownerName: "$owner.ownerName", quantity: 1, message: "$interests.message", status: "$interests.status" } }, { $sort: { quantity: -1 } }]).toArray();
+            const result = await cropsCollection.aggregate([{ $unwind: "$interests" }, { $match: { "interests.userEmail": email } }, { $addFields: { quantity: { $toInt: "$interests.quantity" } } }, { $project: { _id: 0, cropId: "$_id", cropName: "$name", ownerName: "$owner.ownerName", quantity: 1, message: "$interests.message", status: "$interests.status" } }, { $sort: { quantity: 1 } }]).toArray();
             res.send(result);
         })
         app.patch('/my-crops/:id', async (req, res) => {
@@ -80,6 +82,25 @@ const run = async () => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await cropsCollection.deleteOne(query)
+            res.send(result)
+        })
+        app.patch('/interests/:id', async (req, res) => {
+            const id = req.params.id;
+            const { status, userEmail , quantity} = req.body;
+            // console.log(quantity)
+            const result = await cropsCollection.updateOne(
+                { "interests.cropId": id },
+                { $set: { "interests.$[e].status": status } },
+                { arrayFilters: [{ "e.userEmail": userEmail }] }
+            );
+            res.send(result)
+        })
+        app.get('/steps', async (req,res)=>{
+            const result = await stepsCollection.find().toArray()
+            res.send(result)
+        })
+        app.get('/news', async (req,res)=>{
+            const result = await newsCollection.find().toArray()
             res.send(result)
         })
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
