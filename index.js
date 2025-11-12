@@ -25,6 +25,7 @@ const run = async () => {
         const cropsCollection = KrishiLink.collection("crops");
         const stepsCollection = KrishiLink.collection("steps");
         const newsCollection = KrishiLink.collection("news");
+        const testimonialsCollection = KrishiLink.collection("testimonials");
         app.post('/crops', async (req, res) => {
             const newCrop = req.body;
             const result = await cropsCollection.insertOne(newCrop)
@@ -100,6 +101,10 @@ const run = async () => {
             res.send(result)
         })
         app.get('/news', async (req,res)=>{
+            const result = await newsCollection.find().toArray()
+            res.send(result)
+        })
+        app.get('/testimonials', async (req,res)=>{
             const result = await newsCollection.find().toArray()
             res.send(result)
         })
