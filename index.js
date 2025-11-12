@@ -19,8 +19,8 @@ app.get('/', (req, res) => {
 })
 const run = async () => {
     try {
-        await client.connect();
-        await client.db("admin").command({ ping: 1 });
+        // await client.connect();
+        // await client.db("admin").command({ ping: 1 });
         const KrishiLink = client.db("KrishiLink");
         const cropsCollection = KrishiLink.collection("crops");
         const stepsCollection = KrishiLink.collection("steps");
@@ -87,25 +87,36 @@ const run = async () => {
         })
         app.patch('/interests/:id', async (req, res) => {
             const id = req.params.id;
-            const { status, userEmail , quantity} = req.body;
-            // console.log(quantity)
-            const result = await cropsCollection.updateOne(
-                { "interests.cropId": id },
-                { $set: { "interests.$[e].status": status } },
-                { arrayFilters: [{ "e.userEmail": userEmail }] }
-            );
-            res.send(result)
-        })
-        app.get('/steps', async (req,res)=>{
+            const { status, userEmail, quantity } = req.body;
+            const qty = Number(quantity);
+            try {
+                const result = await cropsCollection.updateOne(
+                    { _id: new ObjectId(id), "interests.userEmail": userEmail },
+                    { $set: { "interests.$.status": status } }
+                );
+                if (status === "accepted" && !isNaN(qty) && qty > 0) {
+                    await cropsCollection.updateOne(
+                        { _id: new ObjectId(id) },
+                        [{ $set: { quantity: { $subtract: [{ $toDouble: "$quantity" }, qty] } } }]
+                    );
+                }
+                res.send({ success: true, result });
+            } catch (error) {
+                res.status(500).send({ error: error.message });
+            }
+        });
+
+
+        app.get('/steps', async (req, res) => {
             const result = await stepsCollection.find().toArray()
             res.send(result)
         })
-        app.get('/news', async (req,res)=>{
+        app.get('/news', async (req, res) => {
             const result = await newsCollection.find().toArray()
             res.send(result)
         })
-        app.get('/testimonials', async (req,res)=>{
-            const result = await newsCollection.find().toArray()
+        app.get('/testimonials', async (req, res) => {
+            const result = await testimonialsCollection.find().toArray()
             res.send(result)
         })
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
