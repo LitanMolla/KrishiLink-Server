@@ -67,10 +67,16 @@ const run = async () => {
             res.send(result)
         })
         app.get('/interests/:email', async (req, res) => {
+            const sort = req.query.sort || "";
             const email = req.params.email;
-            const result = await cropsCollection.aggregate([{ $unwind: "$interests" }, { $match: { "interests.userEmail": email } }, { $addFields: { quantity: { $toInt: "$interests.quantity" } } }, { $project: { _id: 0, cropId: "$_id", cropName: "$name", ownerName: "$owner.ownerName", quantity: 1, message: "$interests.message", status: "$interests.status" } }, { $sort: { quantity: 1 } }]).toArray();
+            const pipeline = [{ $unwind: "$interests" }, { $match: { "interests.userEmail": email } }, { $addFields: { quantity: { $toInt: "$interests.quantity" } } }, { $project: { _id: 0, cropId: "$_id", cropName: "$name", ownerName: "$owner.ownerName", quantity: 1, message: "$interests.message", status: "$interests.status" } }
+            ];
+            if (sort === "1" || sort === "-1") {
+                pipeline.push({ $sort: { quantity: Number(sort) } });
+            }
+            const result = await cropsCollection.aggregate(pipeline).toArray();
             res.send(result);
-        })
+        });
         app.patch('/my-crops/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) };
@@ -105,8 +111,6 @@ const run = async () => {
                 res.status(500).send({ error: error.message });
             }
         });
-
-
         app.get('/steps', async (req, res) => {
             const result = await stepsCollection.find().toArray()
             res.send(result)
