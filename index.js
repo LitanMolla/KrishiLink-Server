@@ -27,69 +27,109 @@ const run = async () => {
         const newsCollection = KrishiLink.collection("news");
         const testimonialsCollection = KrishiLink.collection("testimonials");
         app.post('/crops', async (req, res) => {
-            const newCrop = req.body;
-            const result = await cropsCollection.insertOne(newCrop)
-            res.send(result)
+            try {
+                const newCrop = req.body;
+                const result = await cropsCollection.insertOne(newCrop)
+                res.status(200).json(result)
+            } catch (error) {
+                res.status(400).json({ message: error.message })
+            }
         })
         app.get('/latest', async (req, res) => {
-            const result = await cropsCollection.find().sort({ createdAt: -1 }).limit(6).toArray()
-            res.send(result)
+            try {
+                const result = await cropsCollection.find().sort({ createdAt: -1 }).limit(6).toArray()
+                res.send(result)
+            } catch (error) {
+                res.status(400).json({ message: error.message })
+            }
         })
         app.get('/crops', async (req, res) => {
-            const search = req.query.search || '';
-            const result = await cropsCollection.find({ name: { $regex: search, $options: 'i' } }).toArray()
-            res.send(result)
+            try {
+                const search = req.query.search || '';
+                const result = await cropsCollection.find({ name: { $regex: search, $options: 'i' } }).toArray()
+                res.send(result)
+            } catch (error) {
+                res.status(400).json({ message: error.message })
+            }
         })
         app.get('/my-crops', async (req, res) => {
-            const email = req.query.email;
-            const query = { ['owner.ownerEmail']: email }
-            if (!email) {
-                return res.send({ message: 'Email missing' })
+            const { email } = req.query;
+            try {
+                const query = { ['owner.ownerEmail']: email }
+                if (!email) {
+                    return res.send({ message: 'Email missing' })
+                }
+                const result = await cropsCollection.find(query).toArray()
+                res.status(200).json(result)
+            } catch (error) {
+                res.status(400).json({ message: error.message })
             }
-            const result = await cropsCollection.find(query).toArray()
-            res.send(result)
         })
         app.get('/crops/:id', async (req, res) => {
-            const id = req.params.id;
-            const result = await cropsCollection.find({ _id: new ObjectId(id) }).toArray()
-            res.send(result)
+            const {id} = req.params;
+            try {
+                const result = await cropsCollection.findOne({ _id: new ObjectId(id) })
+                res.status(200).json(result)
+            } catch (error) {
+                res.status(400).json({ message: error.message })
+            }
         })
         app.post('/interests/:id', async (req, res) => {
             const query = req.params.id;
             const newInterest = req.body;
-            newInterest._id = new ObjectId()
-            const result = await cropsCollection.updateOne({ _id: new ObjectId(query) }, { $push: { interests: newInterest } })
-            res.send(result)
+            try {
+                newInterest._id = new ObjectId()
+                const result = await cropsCollection.updateOne({ _id: new ObjectId(query) }, { $push: { interests: newInterest } })
+                res.status(200).json(result)
+            } catch (error) {
+                res.status(400).json({ message: error.message })
+            }
         })
         app.post('/add', async (req, res) => {
             const newCrop = req.body;
-            result = await cropsCollection.insertOne(newCrop)
-            res.send(result)
+            try {              
+                result = await cropsCollection.insertOne(newCrop)
+                res.status(200).json(result)
+            } catch (error) {
+                res.status(400).json({ message: error.message })
+            }
         })
         app.get('/interests/:email', async (req, res) => {
-            const sort = req.query.sort || "";
-            const email = req.params.email;
-            const pipeline = [{ $unwind: "$interests" }, { $match: { "interests.userEmail": email } }, { $addFields: { quantity: { $toInt: "$interests.quantity" } } }, { $project: { _id: 0, cropId: "$_id", cropName: "$name", ownerName: "$owner.ownerName", quantity: 1, message: "$interests.message", status: "$interests.status" } }
-            ];
-            if (sort === "1" || sort === "-1") {
-                pipeline.push({ $sort: { quantity: Number(sort) } });
+            try {   
+                const sort = req.query.sort || "";
+                const email = req.params.email;
+                const pipeline = [{ $unwind: "$interests" }, { $match: { "interests.userEmail": email } }, { $addFields: { quantity: { $toInt: "$interests.quantity" } } }, { $project: { _id: 0, cropId: "$_id", cropName: "$name", ownerName: "$owner.ownerName", quantity: 1, message: "$interests.message", status: "$interests.status" } }
+                ];
+                if (sort === "1" || sort === "-1") {
+                    pipeline.push({ $sort: { quantity: Number(sort) } });
+                }
+                const result = await cropsCollection.aggregate(pipeline).toArray();
+                res.status(200).json(result);
+            } catch (error) {
+                res.status(400).json({ message: error.message })
             }
-            const result = await cropsCollection.aggregate(pipeline).toArray();
-            res.send(result);
         });
         app.patch('/my-crops/:id', async (req, res) => {
             const id = req.params.id
-            const query = { _id: new ObjectId(id) };
-            const updatedData = req.body;
-            const update = { $set: updatedData }
-            const result = await cropsCollection.updateOne(query, update)
-            res.send(result)
+            try {               
+                const query = { _id: new ObjectId(id) };
+                const updatedData = req.body;
+                const update = { $set: updatedData }
+                const result = await cropsCollection.updateOne(query, update)
+                res.status(200).json(result)
+            } catch (error) {
+                res.status(400).json({ message: error.message })
+            }
         })
         app.delete('/my-crops/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { _id: new ObjectId(id) }
-            const result = await cropsCollection.deleteOne(query)
-            res.send(result)
+            try {
+                const query = { _id: new ObjectId(id) }
+                const result = await cropsCollection.deleteOne(query)
+                res.status(200).json(result)
+            } catch (error) {
+                res.status(400).json({ message: error.message })
+            }
         })
         app.patch('/interests/:id', async (req, res) => {
             const id = req.params.id;
